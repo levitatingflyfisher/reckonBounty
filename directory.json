@@ -1,0 +1,16 @@
+{
+  "reckonbounty": "0.1",
+  "kind": "directory",
+  "bots": [
+    {
+      "name": "rb-reference",
+      "endpoint": null,
+      "transport": "file",
+      "tiers": ["public", "redacted"],
+      "pricing": null,
+      "operator": "reckonBounty project",
+      "model": "configurable (claude -p / any OpenAI-compatible endpoint)",
+      "notes": "Reference implementation; run it yourself: rb answer"
+    }
+  ]
+}

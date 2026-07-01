@@ -1,0 +1,20 @@
+{
+  "reckonbounty": "0.1",
+  "kind": "response",
+  "request_id": "5f0a2b1c-9d4e-4f6a-8b3c-7e1d2a5b4c6d",
+  "id": "c9d8e7f6-5555-4444-8333-222211110000",
+  "created_at": "2026-07-11T09:41:00Z",
+  "bot": {
+    "name": "cautiousBot",
+    "operator": "anonymous",
+    "model": "llamafile/Phi-3.5-mini-instruct Q5_K_M, single pass",
+    "directory_url": null
+  },
+  "forecast": {
+    "p": 0.20,
+    "rationale": "At ~1.1x gross annual income on a single income, the carrying costs leave no slack for a surprise (roof, assessment, job wobble), and every stressor lands on one paycheck. The rental offset and the family-use plan compete for the same peak weeks, so at least one of the two assumptions must fail. One year is also the honeymoon-fade window: satisfaction surveys on discretionary property purchases dip hardest at months 9-18.",
+    "base_rates": ["Second-home satisfaction at 12 months", "Single-income household discretionary-purchase regret"],
+    "key_uncertainties": ["Actual peak-season rental demand", "Whether the asker counts 'did not buy' as the right call"],
+    "clarifying_questions": ["What fraction of the 20 weekends survive one soccer season?"]
+  }
+}

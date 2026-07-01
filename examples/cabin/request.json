@@ -1,0 +1,20 @@
+{
+  "reckonbounty": "0.1",
+  "kind": "request",
+  "id": "5f0a2b1c-9d4e-4f6a-8b3c-7e1d2a5b4c6d",
+  "created_at": "2026-07-11T06:30:00Z",
+  "reply_by": null,
+  "privacy": { "tier": "redacted", "redaction": "local-llm" },
+  "question": {
+    "type": "binary",
+    "title": "Buy the vacation cabin?",
+    "background": "Family of five, single income, stable job. Cabin is 2.5h drive, asking price ~= 1.1x our annual gross income, 20% down available without touching retirement. Intended use: ~20 weekends/yr. Local rental comps would cover ~60% of carrying costs if rented 8 weeks/yr. Question: will we, one year after purchase, judge the purchase to have been the right call?",
+    "resolution": {
+      "criteria": "Asker records a yes/no judgment 12 months after purchase (or records 'did not buy').",
+      "horizon": "2027-08-01",
+      "resolver": "asker"
+    }
+  },
+  "bounty": { "rail": "none", "terms": "per-answer", "amount": "0", "currency": "none" },
+  "client": { "app": "reckon", "version": "0.9.0" }
+}

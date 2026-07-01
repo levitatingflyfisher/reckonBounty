@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "reckonbounty"
+version = "0.1.0"
+description = "Reference tools for the reckonBounty protocol: rb ask / answer / resolve / score / validate"
+readme = { text = "Reference `rb` CLI for the reckonBounty protocol. Spec: docs/spec/PROTOCOL.md in the repository root. Zero runtime dependencies, by design (ADR-0003).", content-type = "text/markdown" }
+requires-python = ">=3.11"
+license = { text = "MIT" }
+# Zero runtime dependencies — stdlib only (ADR-0003). Adding one requires a
+# superseding ADR, not a lockfile entry.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+rb = "reckonbounty.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/levitatingflyfisher/reckonBounty"
+Specification = "https://github.com/levitatingflyfisher/reckonBounty/blob/master/docs/spec/PROTOCOL.md"
+
+[tool.setuptools.packages.find]
+include = ["reckonbounty*"]

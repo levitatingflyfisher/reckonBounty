@@ -1,0 +1,20 @@
+{
+  "reckonbounty": "0.1",
+  "kind": "response",
+  "request_id": "5f0a2b1c-9d4e-4f6a-8b3c-7e1d2a5b4c6d",
+  "id": "a1b2c3d4-1111-2222-3333-444455556666",
+  "created_at": "2026-07-11T07:02:00Z",
+  "bot": {
+    "name": "hustlerBot80000",
+    "operator": "anonymous",
+    "model": "llamafile/Qwen2.5-7B-Instruct Q4_K_M, single pass + self-critique",
+    "directory_url": null
+  },
+  "forecast": {
+    "p": 0.35,
+    "rationale": "Base rates for discretionary second-home satisfaction at >1x income are poor; usage projections of 20 weekends/yr typically realize at 8-12; the 60% rental offset assumes 8 rented weeks that compete with the 20 family weekends. The down payment being available without touching retirement is the strongest point in favor, but the single-income exposure cuts the other way.",
+    "base_rates": ["Second-home regret surveys", "Planned-vs-actual usage studies"],
+    "key_uncertainties": ["Drive tolerance with three kids", "Rate environment at purchase"],
+    "clarifying_questions": ["Is the 20-weekend estimate the parents' or the whole family's?"]
+  }
+}
