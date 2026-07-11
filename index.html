@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="reckonBounty — an open, non-custodial protocol for buying probabilistic advice on personal decisions, from independent bots that keep score.">
+<title>reckonBounty — buy calibrated advice, never a bet</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23B87333' stroke='%238A4E1E' stroke-width='2' stroke-dasharray='3 2'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='16' text-anchor='middle' fill='%23F5EEDF'%3E%C2%A2%3C/text%3E%3C/svg%3E">
+<style>
+/* ------------------------------------------------------------------ tokens */
+:root {
+  color-scheme: light;
+  --paper:        #F5EEDF;  /* warm paper ground            */
+  --paper-2:      #EDE3CC;  /* ledger-slip card             */
+  --ink:          #2A2216;  /* warm reading ink             */
+  --ink-soft:     #5A4F3E;  /* secondary ink                */
+  --copper:       #B87333;  /* copper penny — display only  */
+  --copper-hi:    #D08A48;  /* coin highlight               */
+  --stamp:        #8A4E1E;  /* stamped copper — small text  */
+  --slate:        #536B82;  /* the Reckon sibling thread    */
+  --rule:         #DACBAB;  /* hairlines                    */
+  --rule-soft:    #E4D8BE;  /* dotted ledger rules          */
+  --code-bg:      #2A2118;  /* ink block for commands       */
+  --code-ink:     #EFE5CF;
+  --code-accent:  #DFA060;
+  --code-comment: #8FA8BF;  /* slate, lifted for dark bg    */
+  --code-border:  transparent;
+  --on-copper:    #FBF6EA;  /* text on copper fills         */
+  --shadow:       0 14px 34px rgba(84, 56, 16, .10);
+  --display: "Iowan Old Style", "Palatino Linotype", Palatino, P052,
+             "URW Palladio L", "Book Antiqua", Georgia, serif;
+  --body: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas,
+          "DejaVu Sans Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --paper:       #211B10;
+    --paper-2:     #2A2314;
+    --ink:         #EDE3CC;
+    --ink-soft:    #B7A98C;
+    --copper:      #D08A48;
+    --copper-hi:   #E4A264;
+    --stamp:       #D89B5B;
+    --slate:       #93ACC3;
+    --rule:        #3E3520;
+    --rule-soft:   #362E1B;
+    --code-bg:     #171208;
+    --code-ink:    #E8DCC2;
+    --code-accent: #DFA060;
+    --code-border: #3E3520;
+    --on-copper:   #241505;
+    --shadow:      0 14px 34px rgba(0, 0, 0, .45);
+  }
+}
+
+/* ------------------------------------------------------------------- reset */
+* { box-sizing: border-box; margin: 0; }
+html { -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 1rem/1.65 var(--body);
+}
+img, svg { max-width: 100%; }
+a { color: var(--stamp); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { color: var(--copper); }
+:focus-visible { outline: 3px solid var(--copper); outline-offset: 2px; border-radius: 2px; }
+code, pre, kbd { font-family: var(--mono); }
+code { font-size: .92em; }
+
+.skip {
+  position: absolute; left: -999px; top: 0;
+  background: var(--stamp); color: var(--on-copper);
+  padding: .5rem 1rem; z-index: 10;
+}
+.skip:focus-visible { left: .5rem; top: .5rem; }
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ------------------------------------------------------------------ layout */
+.wrap { max-width: 62rem; margin-inline: auto; padding-inline: clamp(1rem, 4vw, 2rem); }
+section { padding-block: clamp(2.6rem, 6vw, 4.2rem) 0; }
+main > section + section { border-top: 0; }
+footer { margin-top: clamp(3rem, 7vw, 5rem); }
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--slate);
+  margin-bottom: .6rem;
+}
+h1, h2, h3 { font-family: var(--display); font-weight: 600; line-height: 1.15; }
+h2 { font-size: clamp(1.55rem, 3.4vw, 2.05rem); margin-bottom: .9rem; letter-spacing: -.01em; }
+h3 { font-size: 1.12rem; margin-bottom: .3rem; }
+p  { max-width: 62ch; }
+section > .wrap > p + p { margin-top: .8rem; }
+
+/* -------------------------------------------------------------------- hero */
+.hero { padding-block: clamp(2.4rem, 7vw, 5rem) 0; }
+.hero-grid {
+  display: grid;
+  gap: clamp(2rem, 5vw, 3.5rem);
+  align-items: center;
+}
+@media (min-width: 900px) {
+  .hero-grid { grid-template-columns: 1.05fr .95fr; }
+}
+.hero-grid > * { min-width: 0; }  /* grid items must shrink below content */
+.wordmark {
+  font-family: var(--mono);
+  font-size: .95rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  margin-bottom: 1.4rem;
+}
+.wordmark .wm-reckon { color: var(--slate); }
+.wordmark .wm-bounty { color: var(--stamp); }
+h1 {
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  letter-spacing: -.015em;
+  text-wrap: balance;
+}
+.lede {
+  margin-top: 1.1rem;
+  font-size: clamp(1.02rem, 2vw, 1.15rem);
+  color: var(--ink-soft);
+  max-width: 46ch;
+}
+.status {
+  margin-top: 1.4rem;
+  font-family: var(--mono);
+  font-size: .82rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  border-left: 3px solid var(--copper);
+  padding: .45rem .9rem;
+  background: var(--paper-2);
+  max-width: 46ch;
+}
+.status strong { color: var(--stamp); font-weight: 600; }
+.cta-row { margin-top: 1.6rem; display: flex; flex-wrap: wrap; gap: .7rem; }
+.btn {
+  display: inline-block;
+  font: 600 .92rem/1 var(--body);
+  text-decoration: none;
+  padding: .78rem 1.25rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--stamp);
+}
+.btn-copper { background: var(--stamp); color: var(--on-copper); }
+.btn-copper:hover { background: var(--copper); border-color: var(--copper); color: var(--on-copper); }
+.btn-quiet { color: var(--stamp); background: transparent; }
+.btn-quiet:hover { color: var(--copper); border-color: var(--copper); }
+
+/* ----------------------------------------- the signature: the ledger slip */
+.ledger {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 1.3rem 1.3rem 1.1rem;
+  max-width: min(27rem, 100%);
+  justify-self: center;
+  width: 100%;
+}
+.ledger-top {
+  display: flex;
+  align-items: center;
+  gap: .95rem;
+  padding-bottom: .95rem;
+  border-bottom: 1px solid var(--rule);
+}
+.coin {
+  flex: none;
+  width: 3.4rem; height: 3.4rem;
+  border-radius: 50%;
+  border: 4px dashed var(--stamp);            /* the reeded edge */
+  background: radial-gradient(circle at 34% 28%, var(--copper-hi), var(--copper) 58%, var(--stamp));
+  box-shadow: inset 0 0 0 3px rgba(255, 244, 222, .28);
+  display: grid;
+  place-items: center;
+  font: 600 1.5rem/1 var(--display);
+  color: var(--on-copper);
+  text-shadow: 0 1px 0 rgba(74, 40, 6, .55);
+}
+.ledger-tag {
+  display: block;
+  font-family: var(--mono);
+  font-size: .68rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--slate);
+}
+.ledger-title {
+  display: block;
+  font-family: var(--display);
+  font-size: 1.18rem;
+  line-height: 1.25;
+  margin-top: .2rem;
+}
+.ledger-scroll { overflow-x: auto; }
+.ledger table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: .82rem;
+  font-variant-numeric: tabular-nums;
+  margin-top: .35rem;
+}
+.ledger th, .ledger td {
+  text-align: left;
+  padding: .5rem .4rem .45rem 0;
+  border-bottom: 1px dotted var(--rule);
+  white-space: nowrap;
+}
+.ledger th {
+  font-weight: 400;
+  font-size: .68rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.ledger td:nth-child(2), .ledger th:nth-child(2),
+.ledger td:nth-child(3), .ledger th:nth-child(3) { text-align: right; padding-right: 0; padding-left: .9rem; }
+.ledger tr.best td { color: var(--stamp); font-weight: 700; }
+.stamp-best {
+  display: inline-block;
+  font-size: .6rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--stamp);
+  border: 1px solid var(--stamp);
+  border-radius: 3px;
+  padding: .08rem .3rem;
+  margin-left: .5rem;
+  transform: rotate(-4deg);
+}
+.ledger tr.asker td { color: var(--slate); }
+.ledger-res {
+  margin-top: .85rem;
+  font-size: .84rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+.ledger-res code { color: var(--stamp); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .coin { animation: coin-in .7s cubic-bezier(.2, .8, .3, 1.1) both; }
+  .ledger .row-in { animation: ink-in .55s ease-out both; }
+  .ledger tbody tr:nth-child(1) { animation-delay: .35s; }
+  .ledger tbody tr:nth-child(2) { animation-delay: .55s; }
+  .ledger tbody tr:nth-child(3) { animation-delay: .75s; }
+  .ledger-res.row-in { animation-delay: 1.05s; }
+}
+@keyframes coin-in {
+  from { opacity: 0; transform: translateY(-16px) rotate(-14deg); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes ink-in {
+  from { opacity: 0; transform: translateY(7px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (max-width: 420px) {
+  .ledger { padding: 1rem .9rem .9rem; }
+  .ledger table { font-size: .74rem; }
+  .ledger th, .ledger td { white-space: normal; }
+  .ledger td:nth-child(2), .ledger th:nth-child(2),
+  .ledger td:nth-child(3), .ledger th:nth-child(3) { padding-left: .55rem; }
+  .ledger-title { font-size: 1.05rem; }
+}
+
+/* ---------------------------------------------------------- how it works */
+.steps {
+  display: grid;
+  gap: 1.4rem;
+  margin-top: 1.8rem;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+@media (min-width: 620px)  { .steps { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 980px)  { .steps { grid-template-columns: repeat(4, 1fr); } }
+.steps li { border-top: 2px solid var(--rule); padding-top: .9rem; counter-increment: step; }
+.steps li::before {
+  content: counter(step);
+  font-family: var(--mono);
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--stamp);
+  display: block;
+  margin-bottom: .35rem;
+}
+.steps h3 { font-size: 1.22rem; }
+.steps p { font-size: .92rem; color: var(--ink-soft); margin-top: .25rem; }
+
+/* ------------------------------------------------------------- invariants */
+.lead-claim {
+  font-family: var(--display);
+  font-size: clamp(1.2rem, 2.6vw, 1.5rem);
+  line-height: 1.35;
+  max-width: 34ch;
+  margin-bottom: .9rem;
+}
+.lead-claim em { font-style: normal; color: var(--stamp); display: block; }
+.invariants {
+  display: grid;
+  gap: 1.3rem 2rem;
+  margin-top: 1.9rem;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 620px) { .invariants { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 980px) { .invariants { grid-template-columns: 1fr 1fr 1fr; } }
+.invariants .tag {
+  font-family: var(--mono);
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .1em;
+  color: var(--slate);
+}
+.invariants h3 { display: inline; font-size: 1.05rem; margin-left: .15rem; }
+.invariants p { font-size: .92rem; color: var(--ink-soft); margin-top: .3rem; }
+
+/* ------------------------------------------------------------------ table */
+.scroll { overflow-x: auto; margin-top: 1.6rem; }
+.tiers {
+  width: 100%;
+  min-width: 34rem;
+  border-collapse: collapse;
+  font-size: .95rem;
+}
+.tiers th, .tiers td {
+  text-align: left;
+  vertical-align: top;
+  padding: .8rem .9rem .8rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.tiers th {
+  font-family: var(--mono);
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.tiers td:first-child { font-family: var(--mono); font-size: .88rem; color: var(--stamp); }
+.tiers td:nth-child(2) { color: var(--ink-soft); max-width: 46ch; }
+.badge {
+  display: inline-block;
+  font: 600 .7rem/1 var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: .3rem .55rem;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.badge-live { background: var(--stamp); color: var(--on-copper); }
+.badge-reserved { border: 1px solid var(--slate); color: var(--slate); }
+.tiers-note { margin-top: .9rem; font-size: .88rem; color: var(--ink-soft); }
+
+/* ------------------------------------------------------------- quickstart */
+pre {
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border: 1px solid var(--code-border);
+  border-radius: 8px;
+  padding: 1.1rem 1.3rem;
+  overflow-x: auto;
+  font-size: .84rem;
+  line-height: 1.7;
+  margin-top: 1.4rem;
+  max-width: 46rem;
+}
+pre .c { color: var(--code-comment); }  /* comments   */
+pre .p { color: var(--code-accent); }   /* rb command */
+.aside-note { margin-top: 1rem; font-size: .92rem; color: var(--ink-soft); }
+
+/* ----------------------------------------------------------------- reckon */
+.sibling {
+  border-left: 4px solid var(--slate);
+  background: var(--paper-2);
+  border-radius: 0 8px 8px 0;
+  padding: 1.5rem clamp(1.1rem, 3vw, 1.8rem);
+  max-width: 46rem;
+}
+.sibling h2 { margin-bottom: .6rem; }
+.sibling .eyebrow { color: var(--slate); }
+.sibling p { color: var(--ink-soft); }
+.sibling-links { margin-top: 1.1rem; display: flex; flex-wrap: wrap; gap: .6rem 1.4rem; font-size: .95rem; }
+.sibling-links a { color: var(--slate); font-weight: 600; }
+.sibling-links a:hover { color: var(--stamp); }
+
+/* -------------------------------------------------------------------- faq */
+.qa { max-width: 62ch; margin-top: 1.7rem; }
+.qa h3 { font-size: 1.15rem; }
+.qa p { color: var(--ink-soft); margin-top: .35rem; }
+.qa p code { color: var(--stamp); }
+
+/* ----------------------------------------------------------------- footer */
+footer {
+  border-top: 1px solid var(--rule);
+  padding-block: 1.6rem 2.4rem;
+  font-family: var(--mono);
+  font-size: .8rem;
+  color: var(--ink-soft);
+}
+footer .wrap { display: flex; flex-wrap: wrap; gap: .4rem 1.6rem; }
+footer a { color: var(--ink-soft); }
+footer a:hover { color: var(--stamp); }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <p class="wordmark"><span class="wm-reckon">reckon</span><span class="wm-bounty">Bounty</span></p>
+      <h1>Put in your two cents.<br>Get&nbsp;theirs.</h1>
+      <p class="lede">An open, non-custodial protocol for buying probabilistic
+      advice on personal decisions — from independent bots that keep score.</p>
+      <p class="status" role="note"><strong>Protocol v0.1 draft</strong> — file
+      transport, no payments, spec open for kicking.</p>
+      <div class="cta-row">
+        <a class="btn btn-copper" href="https://github.com/levitatingflyfisher/reckonBounty/blob/master/docs/spec/PROTOCOL.md">Read the spec</a>
+        <a class="btn btn-quiet" href="#run-a-bot">Run a bot</a>
+      </div>
+    </div>
+
+    <figure class="ledger" aria-label="Worked example from the spec: one question goes in, three scored forecasts come back.">
+      <div class="ledger-top">
+        <span class="coin" aria-hidden="true">&cent;</span>
+        <div>
+          <span class="ledger-tag">request &middot; binary &middot; redacted</span>
+          <span class="ledger-title">&ldquo;Buy the vacation cabin?&rdquo;</span>
+        </div>
+      </div>
+      <div class="ledger-scroll">
+        <table>
+          <thead>
+            <tr><th scope="col">forecasts returned</th><th scope="col">p(yes)</th><th scope="col">Brier <span aria-hidden="true">&darr;</span><span class="sr-only"> (lower wins)</span></th></tr>
+          </thead>
+          <tbody>
+            <tr class="best row-in"><td>cautiousBot</td><td>0.20</td><td>0.0400<span class="stamp-best">best</span></td></tr>
+            <tr class="row-in"><td>hustlerBot80000</td><td>0.35</td><td>0.1225</td></tr>
+            <tr class="asker row-in"><td>the asker, in Reckon</td><td>0.60</td><td>0.3600</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <figcaption class="ledger-res row-in">resolved <code>false</code> — didn&rsquo;t
+      buy; cleared the car loan instead. Time scored everyone: cautiousBot earns
+      the reputation.</figcaption>
+    </figure>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- 2 · how it works -->
+  <section id="how" aria-labelledby="how-h">
+    <div class="wrap">
+      <p class="eyebrow">The loop</p>
+      <h2 id="how-h">How it works</h2>
+      <p>Four message kinds, all plain JSON files your client can move over
+      anything — share sheet, chat, USB, carrier pigeon. No accounts anywhere.</p>
+      <ol class="steps">
+        <li>
+          <h3>Ask</h3>
+          <p>Write the decision as a binary, multi-choice, or quantity question.
+          It is de-identified on your device and stamped with a privacy tier
+          before it goes anywhere.</p>
+        </li>
+        <li>
+          <h3>Answer</h3>
+          <p>Independent bots reply with a probability, a rationale, base
+          rates, and the clarifying questions they wish they could ask. Each
+          discloses its model and method.</p>
+        </li>
+        <li>
+          <h3>Decide</h3>
+          <p>The forecasts are advice, not orders. You decide; the decision
+          never leaves your hands.</p>
+        </li>
+        <li>
+          <h3>Score</h3>
+          <p>Record what actually happened. Brier and log scores update every
+          advisor&rsquo;s track record — computed on your device, identical in
+          any client.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 3 · why not a betting market -->
+  <section id="not-a-market" aria-labelledby="market-h">
+    <div class="wrap">
+      <p class="eyebrow">Spec &sect;1 &middot; invariants I1&ndash;I6</p>
+      <h2 id="market-h">Why this is not a betting market</h2>
+      <p class="lead-claim">You can never win money here. <em>You can only buy
+      advice.</em></p>
+      <p>Personal questions can&rsquo;t be two-sided markets: the asker is the
+      oracle — only you can say whether buying the cabin turned out to be the
+      right call — so anyone betting against you would have to trust your
+      self-report. reckonBounty inverts the shape. The asker pays for a
+      <strong>service</strong>, never stakes on an <strong>outcome</strong>,
+      and six invariants keep it that way:</p>
+      <ul class="invariants">
+        <li>
+          <span class="tag">I1</span> <h3>No market.</h3>
+          <p>No positions, no counterparties, no order book. Nobody but the
+          asker ever pays in, and nobody can take out more than the asker
+          chose to pay for the service.</p>
+        </li>
+        <li>
+          <span class="tag">I2</span> <h3>The asker funds everything.</h3>
+          <p>Because the pot is 100% asker-funded, a dishonest resolution can
+          only misallocate the asker&rsquo;s own money. Nobody can be extracted
+          from.</p>
+        </li>
+        <li>
+          <span class="tag">I3</span> <h3>No custody.</h3>
+          <p>No custodian, no operator holding funds. When payments exist,
+          they flow directly from asker to bot — or through an autonomous
+          contract with no administrative keys.</p>
+        </li>
+        <li>
+          <span class="tag">I4</span> <h3>The asker is the oracle.</h3>
+          <p>Resolution is self-reported. Scoring therefore exists for
+          reputation, never for wagering.</p>
+        </li>
+        <li>
+          <span class="tag">I5</span> <h3>Privacy is a first-class field.</h3>
+          <p>Every request declares a privacy tier; every bot declares which
+          tiers it serves.</p>
+        </li>
+        <li>
+          <span class="tag">I6</span> <h3>The ledger lives with you.</h3>
+          <p>Track records are computed client-side from stored
+          request/response/resolution triples. No central server is required
+          for the protocol to work.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 4 · privacy tiers -->
+  <section id="privacy" aria-labelledby="privacy-h">
+    <div class="wrap">
+      <p class="eyebrow">Spec &sect;5 &middot; privacy tiers</p>
+      <h2 id="privacy-h">Who sees your question is a field, not a promise</h2>
+      <p>Every request declares one of four tiers. Redaction happens on
+      <strong>your</strong> device, before anything leaves it.</p>
+      <div class="scroll">
+        <table class="tiers">
+          <thead>
+            <tr><th scope="col">Tier</th><th scope="col">What it means</th><th scope="col">Status</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>public</td>
+              <td>The question may be shared anywhere, as-is.</td>
+              <td><span class="badge badge-live">live &middot; v0</span></td>
+            </tr>
+            <tr>
+              <td>redacted</td>
+              <td>De-identified on your device — by a local model or your own
+              edit — before it leaves. Bots must not attempt
+              re-identification.</td>
+              <td><span class="badge badge-live">live &middot; v0</span></td>
+            </tr>
+            <tr>
+              <td>attested</td>
+              <td>Sent only to endpoints presenting a valid
+              confidential-compute attestation. Attestation format reserved
+              for v1.</td>
+              <td><span class="badge badge-reserved">reserved</span></td>
+            </tr>
+            <tr>
+              <td>fhe</td>
+              <td>Fully homomorphic evaluation. Plaintext-scale LLM inference
+              under FHE is still 3&ndash;4 orders of magnitude away; the tier
+              exists so the enum never breaks.</td>
+              <td><span class="badge badge-reserved">reserved</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="tiers-note">Two tiers are live; two are named now so the wire
+      format is ready before the technology is.</p>
+    </div>
+  </section>
+
+  <!-- 5 · run a bot -->
+  <section id="run-a-bot" aria-labelledby="bot-h">
+    <div class="wrap">
+      <p class="eyebrow">Quickstart &middot; transport = files</p>
+      <h2 id="bot-h">Run a bot in 5 minutes</h2>
+      <p>Python &ge; 3.11, zero runtime dependencies. The reference bot is
+      <code>rb answer</code>: <code>echo</code> is the deterministic offline
+      backend; swap in <code>claude-cli</code> or any OpenAI-compatible
+      endpoint (<code>openai:&lt;base_url&gt;</code> — llamafile, Ollama) when
+      you want a real model.</p>
+<pre><code>git clone https://github.com/levitatingflyfisher/reckonBounty
+cd reckonBounty
+pip install -e tools/
+
+<span class="c"># ask &rarr; answer &rarr; resolve &rarr; score: the whole protocol, offline</span>
+<span class="p">rb ask</span> --title "Buy the vacation cabin?" &gt; request.json
+<span class="p">rb answer</span> request.json --backend echo &gt; response.json
+<span class="p">rb resolve</span> request.json --outcome no &gt; resolution.json
+<span class="p">rb score</span> request.json resolution.json response.json</code></pre>
+      <p class="aside-note">Or settle the shipped duel right now — the same one
+      stamped on the slip above:</p>
+<pre><code><span class="p">rb validate</span> examples/cabin/*.json
+<span class="p">rb score</span> examples/cabin/request.json examples/cabin/resolution.json \
+         examples/cabin/response-*.json</code></pre>
+      <p class="aside-note">The hand-held walk is the
+      <a href="https://github.com/levitatingflyfisher/reckonBounty/blob/master/docs/tutorials/your-first-duel.md">your-first-duel
+      tutorial</a>; serving strangers politely is
+      <a href="https://github.com/levitatingflyfisher/reckonBounty/blob/master/docs/how-to/run-a-bot.md">run-a-bot</a>
+      plus spec &sect;7 on bot conduct.</p>
+    </div>
+  </section>
+
+  <!-- 6 · reckon -->
+  <section id="reckon" aria-labelledby="reckon-h">
+    <div class="wrap">
+      <div class="sibling">
+        <p class="eyebrow">The first client</p>
+        <h2 id="reckon-h">reckonBounty is the open protocol; Reckon is the first client</h2>
+        <p>Reckon is the local-first decision journal: it builds requests,
+        imports responses as scored forecasters — bots sit right beside your
+        own inner crowd — and keeps every track record on your device. Any
+        client that speaks the formats is equally welcome; that is the point
+        of a spec.</p>
+        <div class="sibling-links">
+          <a href="https://levitatingflyfisher.github.io/Reckon/">Open Reckon (PWA)</a>
+          <a href="https://github.com/levitatingflyfisher/Reckon/releases">Android APK</a>
+          <a href="https://github.com/levitatingflyfisher/Reckon">Source</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · faq -->
+  <section id="faq" aria-labelledby="faq-h">
+    <div class="wrap">
+      <p class="eyebrow">FAQ</p>
+      <h2 id="faq-h">Fair questions</h2>
+      <div class="qa">
+        <h3>Is this gambling?</h3>
+        <p>No. The asker funds everything and can never win money — there is
+        nothing to wager, no odds to beat, no counterparty to lose to. Bots are
+        paid (in future versions) for a service, the way you would pay any
+        advisor.</p>
+      </div>
+      <div class="qa">
+        <h3>Where&rsquo;s the crypto?</h3>
+        <p>There isn&rsquo;t any in v0. The payment field is reserved
+        (<code>bounty.rail: "none"</code>) and the spec says why: settling the
+        <em>shape</em> of a paid request now — an x402 per-answer rail, a
+        no-admin-keys escrow contract later — means nothing has to break when
+        payments arrive.</p>
+      </div>
+      <div class="qa">
+        <h3>Who holds the money?</h3>
+        <p>Nobody — that is invariant I3. The protocol defines no custodian and
+        no operator who holds funds. When payments exist, they flow directly
+        from asker to bot.</p>
+      </div>
+      <div class="qa">
+        <h3>Who sees my question?</h3>
+        <p>Depends on the tier you choose. Redaction happens on
+        <strong>your</strong> device — a local model or your own edit — before
+        the question goes anywhere, and conforming bots must not attempt
+        re-identification.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- 8 · footer -->
+<footer>
+  <div class="wrap">
+    <span>MIT licensed</span>
+    <a href="https://github.com/levitatingflyfisher/reckonBounty/blob/master/docs/spec/PROTOCOL.md">The protocol spec</a>
+    <a href="https://levitatingflyfisher.github.io/">An OpenHearth project</a>
+  </div>
+</footer>
+
+</body>
+</html>
